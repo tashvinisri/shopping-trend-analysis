@@ -7,7 +7,7 @@ from sklearn.model_selection import train_test_split
 from sklearn.ensemble import GradientBoostingRegressor
 from sklearn.preprocessing import LabelEncoder, StandardScaler
 from sklearn.metrics import mean_absolute_error, r2_score
-import io  # Import for handling image download
+import io  # For handling image download
 
 # --- Streamlit Page Configuration ---
 st.set_page_config(page_title="🛒 Shopping Trend Analysis", layout="wide")
@@ -53,6 +53,7 @@ with tab1:
     total_sales = filtered_df["Purchase Amount (USD)"].sum()
     total_transactions = filtered_df.shape[0]
     total_quantity_sold = filtered_df["Previous Purchases"].sum()
+    
     st.metric(label="💰 Total Sales", value=f"${total_sales:,.2f}")
     st.metric(label="🛍 Total Transactions", value=f"{total_transactions}")
     st.metric(label="📦 Total Quantity Sold", value=f"{total_quantity_sold}")
@@ -82,29 +83,48 @@ with tab1:
 with tab2:
     st.subheader("🔥 Top 10 Most Purchased Items")
     top_products = filtered_df["Item Purchased"].value_counts().head(10)
-    fig1, ax = plt.subplots(figsize=(8, 5))
-    sns.barplot(y=top_products.index, x=top_products.values, hue=top_products.index, palette="viridis", legend=False, ax=ax)
+
+    fig, ax = plt.subplots(figsize=(8, 5))
+    bars = sns.barplot(y=top_products.index, x=top_products.values, palette="viridis", ax=ax)
+
+    # Annotate bars with formatted values
+    for bar in bars.patches:
+        ax.text(bar.get_width() - 10,  
+                bar.get_y() + bar.get_height()/2,  
+                f"{int(bar.get_width()):,}",  
+                ha='right', va='center', fontsize=12, color='white', weight='bold')
+
     ax.set_xlabel("Purchase Count")
     ax.set_ylabel("Item Purchased")
     ax.set_title("Top 10 Most Purchased Items")
-    st.pyplot(fig1)
-    
+    ax.spines['top'].set_visible(False)
+    ax.spines['right'].set_visible(False)
+    st.pyplot(fig)
+
+    # Download button
     img_buf1 = io.BytesIO()
-    fig1.savefig(img_buf1, format="jpg")
+    fig.savefig(img_buf1, format="jpg")
     st.download_button(label="📥 Download Top Products Chart", data=img_buf1.getvalue(), file_name="top_purchased_items.jpg", mime="image/jpeg")
 
     st.subheader("📍 Top 10 Locations by Sales")
     top_locations = filtered_df.groupby("Location_Name")["Purchase Amount (USD)"].sum().sort_values(ascending=False).head(10)
-    fig2, ax = plt.subplots(figsize=(8, 5))
-    sns.barplot(y=top_locations.index, x=top_locations.values, hue=top_locations.index, palette="magma", legend=False, ax=ax)
+
+    fig, ax = plt.subplots(figsize=(8, 5))
+    bars = sns.barplot(y=top_locations.index, x=top_locations.values, palette="magma", ax=ax)
+
+    # Annotate bars with formatted values
+    for bar in bars.patches:
+        ax.text(bar.get_width() - 500,  
+                bar.get_y() + bar.get_height()/2,
+                f"${bar.get_width():,.2f}",  
+                ha='right', va='center', fontsize=12, color='white', weight='bold')
+
     ax.set_xlabel("Total Sales (USD)")
     ax.set_ylabel("Location")
     ax.set_title("Top 10 Locations by Sales")
-    st.pyplot(fig2)
-    
-    img_buf2 = io.BytesIO()
-    fig2.savefig(img_buf2, format="jpg")
-    st.download_button(label="📥 Download Top Locations Chart", data=img_buf2.getvalue(), file_name="top_locations_sales.jpg", mime="image/jpeg")
+    ax.spines['top'].set_visible(False)
+    ax.spines['right'].set_visible(False)
+    st.pyplot(fig)
 
 # --- STEP 3: Predict Future Purchases ---
 with tab3:
@@ -128,4 +148,6 @@ with tab3:
     season = st.selectbox("Season:", df["Season_Name"].unique())
     subscription = st.selectbox("Subscription Status:", df["Subscription Status_Name"].unique())
 
-    st.subheader(f"🛍 Predicted Purchase Amount: ${model.predict(scaler.transform(np.array([[age, prev_purchases, encoder_dict['Gender'].transform([gender])[0], encoder_dict['Category'].transform([category])[0], encoder_dict['Season'].transform([season])[0], encoder_dict['Subscription Status'].transform([subscription])[0], encoder_dict['Location'].transform([location])[0]]])))[0]:.2f}")
+    prediction = model.predict(scaler.transform(np.array([[age, prev_purchases, encoder_dict['Gender'].transform([gender])[0], encoder_dict['Category'].transform([category])[0], encoder_dict['Season'].transform([season])[0], encoder_dict['Subscription Status'].transform([subscription])[0], encoder_dict['Location'].transform([location])[0]]])))[0]
+
+    st.subheader(f"🛍 Predicted Purchase Amount: ${prediction:.2f}")
