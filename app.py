@@ -67,7 +67,12 @@ with tab1:
         ax.pie(gender_counts, labels=gender_counts.index, autopct='%1.1f%%', colors=["#E63946", "#457B9D"], startangle=140, wedgeprops={'edgecolor': 'black'})
         ax.axis("equal")
         st.pyplot(fig_gender)
-    
+
+        buf = io.BytesIO()
+        fig_gender.savefig(buf, format="jpg")
+        buf.seek(0)
+        st.download_button(label="📥 Download Gender Chart", data=buf, file_name="gender_distribution.jpg", mime="image/jpeg")
+
     with col2:
         st.subheader("⭐ Subscription Status")
         subscription_counts = filtered_df["Subscription Status_Name"].value_counts()
@@ -76,6 +81,11 @@ with tab1:
         ax.axis("equal")
         st.pyplot(fig_subs)
 
+        buf = io.BytesIO()
+        fig_subs.savefig(buf, format="jpg")
+        buf.seek(0)
+        st.download_button(label="📥 Download Subscription Chart", data=buf, file_name="subscription_status.jpg", mime="image/jpeg")
+
     if st.checkbox("📜 Show Raw Data"):
         st.dataframe(filtered_df.head())
 
@@ -83,61 +93,54 @@ with tab1:
 with tab2:
     st.subheader("📈 Shopping Trends")
 
-    col1, col2 = st.columns([1, 1])  # Creates two equal columns for layout
+    col1, col2 = st.columns(2)
 
     with col1:
         st.subheader("🔥 Top 10 Most Purchased Items")
         top_products = filtered_df["Item Purchased"].value_counts().head(10)
 
-        fig, ax = plt.subplots(figsize=(6, 4))  # Reduced figure size for better fit
-        bars = sns.barplot(y=top_products.index, x=top_products.values, palette="viridis", ax=ax)
-
-        # Annotate bars with formatted values
-        for bar in bars.patches:
-            ax.text(bar.get_width() - 0.5,  
-                    bar.get_y() + bar.get_height()/2,  
-                    f"{int(bar.get_width()):,}",  
-                    ha='right', va='center', fontsize=10, color='white', weight='bold')
-
+        fig, ax = plt.subplots(figsize=(6, 4))
+        sns.barplot(y=top_products.index, x=top_products.values, palette="viridis", ax=ax)
         ax.set_xlabel("Purchase Count")
         ax.set_ylabel("Item Purchased")
         ax.set_title("Top 10 Most Purchased Items")
-        ax.spines['top'].set_visible(False)
-        ax.spines['right'].set_visible(False)
         st.pyplot(fig)
+
+        buf = io.BytesIO()
+        fig.savefig(buf, format="jpg")
+        buf.seek(0)
+        st.download_button(label="📥 Download Top Items Chart", data=buf, file_name="top_purchased_items.jpg", mime="image/jpeg")
 
     with col2:
         st.subheader("📍 Top 10 Locations by Sales")
         top_locations = filtered_df.groupby("Location_Name")["Purchase Amount (USD)"].sum().sort_values(ascending=False).head(10)
 
-        fig, ax = plt.subplots(figsize=(6, 4))  
-        bars = sns.barplot(y=top_locations.index, x=top_locations.values, palette="magma", ax=ax)
-
-        # Annotate bars with formatted values
-        for bar in bars.patches:
-            ax.text(bar.get_width() - 500,  
-                    bar.get_y() + bar.get_height()/2,
-                    f"${bar.get_width():,.2f}",  
-                    ha='right', va='center', fontsize=10, color='white', weight='bold')
-
+        fig, ax = plt.subplots(figsize=(6, 4))
+        sns.barplot(y=top_locations.index, x=top_locations.values, palette="magma", ax=ax)
         ax.set_xlabel("Total Sales (USD)")
         ax.set_ylabel("Location")
         ax.set_title("Top 10 Locations by Sales")
-        ax.spines['top'].set_visible(False)
-        ax.spines['right'].set_visible(False)
         st.pyplot(fig)
+
+        buf = io.BytesIO()
+        fig.savefig(buf, format="jpg")
+        buf.seek(0)
+        st.download_button(label="📥 Download Sales Chart", data=buf, file_name="top_locations_sales.jpg", mime="image/jpeg")
 
 # --- STEP 3: Predict Future Purchases ---
 with tab3:
     st.subheader("🔮 Predict Future Purchase Amount")
+
     features = ["Age", "Previous Purchases", "Gender", "Category", "Season", "Subscription Status", "Location"]
     X = df[features]
     y = df["Purchase Amount (USD)"]
 
     X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
+
     scaler = StandardScaler()
     X_train_scaled = scaler.fit_transform(X_train)
     X_test_scaled = scaler.transform(X_test)
+
     model = GradientBoostingRegressor(n_estimators=500, learning_rate=0.05, max_depth=4, random_state=42)
     model.fit(X_train_scaled, y_train)
 
@@ -149,6 +152,11 @@ with tab3:
     season = st.selectbox("Season:", df["Season_Name"].unique())
     subscription = st.selectbox("Subscription Status:", df["Subscription Status_Name"].unique())
 
-    prediction = model.predict(scaler.transform(np.array([[age, prev_purchases, encoder_dict['Gender'].transform([gender])[0], encoder_dict['Category'].transform([category])[0], encoder_dict['Season'].transform([season])[0], encoder_dict['Subscription Status'].transform([subscription])[0], encoder_dict['Location'].transform([location])[0]]])))[0]
+    prediction = model.predict(scaler.transform(np.array([[age, prev_purchases, 
+        encoder_dict['Gender'].transform([gender])[0], 
+        encoder_dict['Category'].transform([category])[0], 
+        encoder_dict['Season'].transform([season])[0], 
+        encoder_dict['Subscription Status'].transform([subscription])[0], 
+        encoder_dict['Location'].transform([location])[0]]])))[0]
 
-    st.subheader(f"🛍 Predicted Purchase Amount: ${prediction:.2f}")
+    st.subheader(f"🛍 Predicted Purchase Amount: **${prediction:.2f}**")
