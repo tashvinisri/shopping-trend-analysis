@@ -81,50 +81,51 @@ with tab1:
 
 # --- STEP 2: Visualizations ---
 with tab2:
-    st.subheader("🔥 Top 10 Most Purchased Items")
-    top_products = filtered_df["Item Purchased"].value_counts().head(10)
+    st.subheader("📈 Shopping Trends")
 
-    fig, ax = plt.subplots(figsize=(8, 5))
-    bars = sns.barplot(y=top_products.index, x=top_products.values, palette="viridis", ax=ax)
+    col1, col2 = st.columns([1, 1])  # Creates two equal columns for layout
 
-    # Annotate bars with formatted values
-    for bar in bars.patches:
-        ax.text(bar.get_width() - 10,  
-                bar.get_y() + bar.get_height()/2,  
-                f"{int(bar.get_width()):,}",  
-                ha='right', va='center', fontsize=12, color='white', weight='bold')
+    with col1:
+        st.subheader("🔥 Top 10 Most Purchased Items")
+        top_products = filtered_df["Item Purchased"].value_counts().head(10)
 
-    ax.set_xlabel("Purchase Count")
-    ax.set_ylabel("Item Purchased")
-    ax.set_title("Top 10 Most Purchased Items")
-    ax.spines['top'].set_visible(False)
-    ax.spines['right'].set_visible(False)
-    st.pyplot(fig)
+        fig, ax = plt.subplots(figsize=(6, 4))  # Reduced figure size for better fit
+        bars = sns.barplot(y=top_products.index, x=top_products.values, palette="viridis", ax=ax)
 
-    # Download button
-    img_buf1 = io.BytesIO()
-    fig.savefig(img_buf1, format="jpg")
-    st.download_button(label="📥 Download Top Products Chart", data=img_buf1.getvalue(), file_name="top_purchased_items.jpg", mime="image/jpeg")
+        # Annotate bars with formatted values
+        for bar in bars.patches:
+            ax.text(bar.get_width() - 0.5,  
+                    bar.get_y() + bar.get_height()/2,  
+                    f"{int(bar.get_width()):,}",  
+                    ha='right', va='center', fontsize=10, color='white', weight='bold')
 
-    st.subheader("📍 Top 10 Locations by Sales")
-    top_locations = filtered_df.groupby("Location_Name")["Purchase Amount (USD)"].sum().sort_values(ascending=False).head(10)
+        ax.set_xlabel("Purchase Count")
+        ax.set_ylabel("Item Purchased")
+        ax.set_title("Top 10 Most Purchased Items")
+        ax.spines['top'].set_visible(False)
+        ax.spines['right'].set_visible(False)
+        st.pyplot(fig)
 
-    fig, ax = plt.subplots(figsize=(8, 5))
-    bars = sns.barplot(y=top_locations.index, x=top_locations.values, palette="magma", ax=ax)
+    with col2:
+        st.subheader("📍 Top 10 Locations by Sales")
+        top_locations = filtered_df.groupby("Location_Name")["Purchase Amount (USD)"].sum().sort_values(ascending=False).head(10)
 
-    # Annotate bars with formatted values
-    for bar in bars.patches:
-        ax.text(bar.get_width() - 500,  
-                bar.get_y() + bar.get_height()/2,
-                f"${bar.get_width():,.2f}",  
-                ha='right', va='center', fontsize=12, color='white', weight='bold')
+        fig, ax = plt.subplots(figsize=(6, 4))  
+        bars = sns.barplot(y=top_locations.index, x=top_locations.values, palette="magma", ax=ax)
 
-    ax.set_xlabel("Total Sales (USD)")
-    ax.set_ylabel("Location")
-    ax.set_title("Top 10 Locations by Sales")
-    ax.spines['top'].set_visible(False)
-    ax.spines['right'].set_visible(False)
-    st.pyplot(fig)
+        # Annotate bars with formatted values
+        for bar in bars.patches:
+            ax.text(bar.get_width() - 500,  
+                    bar.get_y() + bar.get_height()/2,
+                    f"${bar.get_width():,.2f}",  
+                    ha='right', va='center', fontsize=10, color='white', weight='bold')
+
+        ax.set_xlabel("Total Sales (USD)")
+        ax.set_ylabel("Location")
+        ax.set_title("Top 10 Locations by Sales")
+        ax.spines['top'].set_visible(False)
+        ax.spines['right'].set_visible(False)
+        st.pyplot(fig)
 
 # --- STEP 3: Predict Future Purchases ---
 with tab3:
